@@ -1,0 +1,8 @@
+.DS_Store
+*-enc.ts
+*.m3u8
+*.bin
+.codex
+.cursor
+.claude
+.vscode
