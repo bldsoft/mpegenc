@@ -67,6 +67,27 @@ func TestOutputAlignerSpillsSurplusOntoLastToken(t *testing.T) {
 	}
 }
 
+func TestOutputAlignerPreservesDelayedSurplusPacket(t *testing.T) {
+	a := newOutputAligner(0x100)
+	a.tokens = append(a.tokens, 0)
+	queueOutputAlignerPacket(t, a, 1)
+	completed := a.align()
+
+	queueOutputAlignerPacket(t, a, 2)
+	flushed, err := a.flush()
+	if err != nil {
+		t.Fatal(err)
+	}
+	completed = append(completed, flushed...)
+
+	if len(completed) != 1 || completed[0].token != 0 {
+		t.Fatalf("completed = %+v, want single slot for token 0", completed)
+	}
+	if len(completed[0].packets) != 2 {
+		t.Fatalf("delayed surplus packet was lost: %d packets", len(completed[0].packets))
+	}
+}
+
 func TestOutputAlignerFlushCompletesLeftoverTokensEmpty(t *testing.T) {
 	a := newOutputAligner(0x100)
 	a.tokens = append(a.tokens, 0, 1)
