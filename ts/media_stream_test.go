@@ -39,6 +39,11 @@ func TestOutputAlignerStampsPacketsOntoTokensInOrder(t *testing.T) {
 	queueOutputAlignerPacket(t, a, 1)
 	queueOutputAlignerPacket(t, a, 2)
 	completed = a.align()
+	flushed, err := a.flush()
+	if err != nil {
+		t.Fatal(err)
+	}
+	completed = append(completed, flushed...)
 
 	if len(completed) != 2 {
 		t.Fatalf("completed count = %d, want 2", len(completed))
@@ -58,6 +63,11 @@ func TestOutputAlignerSpillsSurplusOntoLastToken(t *testing.T) {
 	queueOutputAlignerPacket(t, a, 1)
 	queueOutputAlignerPacket(t, a, 2)
 	completed := a.align()
+	flushed, err := a.flush()
+	if err != nil {
+		t.Fatal(err)
+	}
+	completed = append(completed, flushed...)
 
 	if len(completed) != 1 || completed[0].token != 0 {
 		t.Fatalf("completed = %+v, want single slot for token 0", completed)

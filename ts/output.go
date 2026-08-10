@@ -43,9 +43,15 @@ type outputAligner struct {
 	// ccInitialized prevents later source packets from resetting the regenerated cc
 	ccInitialized bool
 
-	// Tokens are source slots consumed for this PID but not fully matched to
-	// regenerated TS packet yet
+	// tokens are source slots consumed for this PID but not fully matched to regenerated
+	// TS packet yet
 	tokens []utils.CommitToken
+	// pending keeps the last matched slot uncommitted so delayed packets can still be appended
+	// after its token was consumed
+	//
+	// there was a problem with Flush() where align() have already consumed the token but
+	// h264 transformer produced more packets on the flush and we couldnt place them anywhere anymore
+	pending *completedSlot
 }
 
 func newOutputAligner(pid uint16) *outputAligner {
@@ -148,15 +154,23 @@ func (a *outputAligner) PESEnd() error {
 // left without a packet stay pending for a later call.
 func (a *outputAligner) align() []completedSlot {
 	packets := a.packetizer.TakePackets()
+	completed := make([]completedSlot, 0, min(len(packets), len(a.tokens)))
+	if a.pending != nil {
+		if len(a.tokens) == 0 {
+			a.pending.packets = append(a.pending.packets, packets...)
+			return nil
+		}
+		completed = append(completed, *a.pending)
+		a.pending = nil
+	}
 	if len(packets) == 0 {
 		// No output is normal: PES parsing or codec transformation may need more
 		// source packets before it can finish enough data to emit a TS packet
-		return nil
+		return completed
 	}
 	// We can match only pairs that exist on both sides. Extra tokens wait for
 	// future output; extra packets cannot receive newly invented global slots
 	count := min(len(packets), len(a.tokens))
-	completed := make([]completedSlot, 0, count)
 	for i := range count {
 		slotPackets := []*astits.Packet{packets[i]}
 		if len(packets) > count && i == count-1 {
@@ -170,6 +184,11 @@ func (a *outputAligner) align() []completedSlot {
 		})
 	}
 	a.tokens = a.tokens[count:]
+	if count > 0 {
+		pending := completed[len(completed)-1]
+		completed = completed[:len(completed)-1]
+		a.pending = &pending
+	}
 	return completed
 }
 
@@ -178,6 +197,10 @@ func (a *outputAligner) flush() ([]completedSlot, error) {
 		return nil, err
 	}
 	completed := a.align()
+	if a.pending != nil {
+		completed = append(completed, *a.pending)
+		a.pending = nil
+	}
 	for _, token := range a.tokens {
 		completed = append(completed, completedSlot{token: token})
 	}

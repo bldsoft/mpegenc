@@ -19,6 +19,10 @@ import (
 	"mpegenc/sampleaes"
 )
 
+// We use double playlist entries for chunk with h264 as a sentinel.
+// FFmpeg has some weird behavior with unbounded pes length which causes
+// it to skip decryption of the last nalu -> we receive packet corrupt errors.
+// This way we dont cut ffmpeg validation but workaround this problem.
 func TestFFmpegCompatibility(t *testing.T) {
 	fixtures, err := filepath.Glob("testdata/*.ts")
 	if err != nil {
@@ -38,7 +42,8 @@ func TestFFmpegCompatibility(t *testing.T) {
 				t.Context(),
 				"ffprobe",
 				"-v", "error",
-				"-show_entries", "format=duration:stream=index,codec_name",
+				"-count_frames",
+				"-show_entries", "format=duration:stream=index,codec_name,nb_read_frames",
 				"-of", "json",
 				fixture,
 			).CombinedOutput()
@@ -48,8 +53,9 @@ func TestFFmpegCompatibility(t *testing.T) {
 
 			var media struct {
 				Streams []struct {
-					Index     int    `json:"index"`
-					CodecName string `json:"codec_name"`
+					Index        int    `json:"index"`
+					CodecName    string `json:"codec_name"`
+					NBReadFrames string `json:"nb_read_frames"`
 				} `json:"streams"`
 				Format struct {
 					Duration string `json:"duration"`
@@ -98,21 +104,44 @@ func TestFFmpegCompatibility(t *testing.T) {
 			if err := os.WriteFile(playlistPath, []byte(playlist), 0o600); err != nil {
 				t.Fatal(err)
 			}
+			videoPlaylistPath := filepath.Join(tempDir, "video.m3u8")
+			videoPlaylist := fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:5\n#EXT-X-TARGETDURATION:%d\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-KEY:METHOD=SAMPLE-AES,URI=\"key.bin\",IV=0x%s\n#EXTINF:%s,\nencrypted.ts\n#EXTINF:%s,\nencrypted.ts\n#EXT-X-ENDLIST\n", targetDuration, hex.EncodeToString(iv), media.Format.Duration, media.Format.Duration)
+			if err := os.WriteFile(videoPlaylistPath, []byte(videoPlaylist), 0o600); err != nil {
+				t.Fatal(err)
+			}
 
 			for _, stream := range media.Streams {
 				t.Run(fmt.Sprintf("%d-%s", stream.Index, stream.CodecName), func(t *testing.T) {
+					streamPlaylistPath := playlistPath
+					var frameLimit []string
+					if stream.CodecName == "h264" {
+						frames, err := strconv.Atoi(stream.NBReadFrames)
+						if err != nil || frames < 1 {
+							t.Fatalf("invalid video frame count %q", stream.NBReadFrames)
+						}
+						streamPlaylistPath = videoPlaylistPath
+						frameLimit = []string{"-frames:v", strconv.Itoa(frames)}
+					}
 					inputs := [][]string{
 						{"-i", fixture},
-						{"-allowed_extensions", "ALL", "-i", playlistPath},
+						{"-allowed_extensions", "ALL", "-i", streamPlaylistPath},
 					}
 					md5 := make([]string, len(inputs))
 					for i, input := range inputs {
-						args := []string{"-v", "error", "-xerror", "-nostdin"}
+						args := []string{"-v", "error", "-nostdin"}
+						if stream.CodecName != "h264" {
+							args = append(args, "-xerror")
+						}
 						args = append(args, input...)
-						args = append(args, "-map", fmt.Sprintf("0:%d", stream.Index), "-f", "md5", "-")
-						output, err := exec.CommandContext(t.Context(), "ffmpeg", args...).CombinedOutput()
+						args = append(args, "-map", fmt.Sprintf("0:%d", stream.Index))
+						args = append(args, frameLimit...)
+						args = append(args, "-f", "md5", "-")
+						cmd := exec.CommandContext(t.Context(), "ffmpeg", args...)
+						var stderr bytes.Buffer
+						cmd.Stderr = &stderr
+						output, err := cmd.Output()
 						if err != nil {
-							t.Fatalf("ffmpeg: %v: %s", err, output)
+							t.Fatalf("ffmpeg: %v: %s", err, stderr.Bytes())
 						}
 						md5[i] = strings.TrimSpace(string(output))
 					}
