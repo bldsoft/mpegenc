@@ -3,9 +3,9 @@ package aac
 import (
 	"fmt"
 
-	"mpegenc/sampleaes"
-	"mpegenc/ts/internal/pmtsignal"
-	"mpegenc/ts/packets"
+	"github.com/bldsoft/mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
+	"github.com/bldsoft/mpegenc/ts/packets"
 )
 
 const adtsHeaderSize = 7

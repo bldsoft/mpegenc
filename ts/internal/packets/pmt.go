@@ -3,7 +3,7 @@ package packets
 import (
 	"fmt"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 )
 
 // PMTCollector reconstructs and parses PMT sections for one requested program.

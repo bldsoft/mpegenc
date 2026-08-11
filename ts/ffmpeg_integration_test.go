@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/sampleaes"
 )
 
 // We use double playlist entries for chunk with h264 as a sentinel.

@@ -3,9 +3,9 @@ package avc
 import (
 	"fmt"
 
-	"mpegenc/sampleaes"
-	"mpegenc/ts/internal/pmtsignal"
-	"mpegenc/ts/packets"
+	"github.com/bldsoft/mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
+	"github.com/bldsoft/mpegenc/ts/packets"
 )
 
 // Transformer processes an Annex-B AVC elementary stream carried by PES

@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 )
 
 func TestOutputAssemblerBlocksReadyLaterSlotUntilEarlierCommits(t *testing.T) {

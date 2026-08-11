@@ -1,6 +1,6 @@
 package codecs
 
-import "mpegenc/ts/packets"
+import "github.com/bldsoft/mpegenc/ts/packets"
 
 type MediaTransformer interface {
 	packets.PESHandler

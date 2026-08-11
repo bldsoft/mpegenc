@@ -1,6 +1,6 @@
 package pmtsignal
 
-import "mpegenc/internal/go-astits"
+import "github.com/bldsoft/mpegenc/internal/go-astits"
 
 type Patch func(*astits.PMTElementaryStream)
 

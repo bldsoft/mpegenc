@@ -3,7 +3,7 @@ package mux
 import (
 	"fmt"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 )
 
 const TSPacketPayloadCapacity = astits.MpegTsPacketSize - 4

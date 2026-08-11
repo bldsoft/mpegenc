@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/sampleaes"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 )
 
 func Encrypt(ctx context.Context, r io.Reader, w io.Writer, cfg sampleaes.Config) error {

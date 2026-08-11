@@ -3,14 +3,14 @@ package transformer
 import (
 	"fmt"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 
-	"mpegenc/sampleaes"
-	"mpegenc/ts/codecs"
-	"mpegenc/ts/codecs/aac"
-	"mpegenc/ts/codecs/avc"
-	"mpegenc/ts/internal/pmtsignal"
-	"mpegenc/ts/packets"
+	"github.com/bldsoft/mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/ts/codecs"
+	"github.com/bldsoft/mpegenc/ts/codecs/aac"
+	"github.com/bldsoft/mpegenc/ts/codecs/avc"
+	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
+	"github.com/bldsoft/mpegenc/ts/packets"
 )
 
 func NewTransformer(

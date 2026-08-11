@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 )
 
 func TestMediaStreamFlushReturnsPendingSlots(t *testing.T) {

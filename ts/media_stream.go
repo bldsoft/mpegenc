@@ -3,11 +3,11 @@ package ts
 import (
 	"fmt"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 
-	"mpegenc/internal/utils"
-	"mpegenc/ts/codecs"
-	"mpegenc/ts/packets"
+	"github.com/bldsoft/mpegenc/internal/utils"
+	"github.com/bldsoft/mpegenc/ts/codecs"
+	"github.com/bldsoft/mpegenc/ts/packets"
 )
 
 type mediaStream struct {

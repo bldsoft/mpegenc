@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"mpegenc/internal/go-astits"
-	"mpegenc/ts/internal/pmtsignal"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
 )
 
 type pesHandler struct {

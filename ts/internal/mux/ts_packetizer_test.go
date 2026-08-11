@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 )
 
 var testPESHeader = []byte{

@@ -1,8 +1,8 @@
 package aac
 
 import (
-	"mpegenc/internal/go-astits"
-	"mpegenc/ts/internal/pmtsignal"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
 )
 
 const sampleAESStreamType astits.StreamType = 0xCF

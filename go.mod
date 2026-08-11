@@ -1,4 +1,4 @@
-module mpegenc
+module github.com/bldsoft/mpegenc
 
 go 1.25.5
 

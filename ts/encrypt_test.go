@@ -7,9 +7,9 @@ import (
 	"io"
 	"testing"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 
-	"mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/sampleaes"
 )
 
 const adtsHeaderSize = 7

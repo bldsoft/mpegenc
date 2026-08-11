@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/sampleaes"
 )
 
 func FuzzEncryptMuxedTS(f *testing.F) {

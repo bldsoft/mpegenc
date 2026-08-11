@@ -1,6 +1,6 @@
 package avc
 
-import "mpegenc/sampleaes"
+import "github.com/bldsoft/mpegenc/sampleaes"
 
 const (
 	avcProbeSize       = 49

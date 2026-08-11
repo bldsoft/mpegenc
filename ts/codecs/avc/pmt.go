@@ -1,6 +1,6 @@
 package avc
 
-import "mpegenc/internal/go-astits"
+import "github.com/bldsoft/mpegenc/internal/go-astits"
 
 const sampleAESStreamType astits.StreamType = 0xDB
 

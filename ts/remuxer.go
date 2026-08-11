@@ -3,11 +3,11 @@ package ts
 import (
 	"fmt"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 
-	"mpegenc/sampleaes"
-	"mpegenc/ts/internal/packets"
-	"mpegenc/ts/internal/transformer"
+	"github.com/bldsoft/mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/ts/internal/packets"
+	"github.com/bldsoft/mpegenc/ts/internal/transformer"
 )
 
 // remuxer is the central packet router.

@@ -5,13 +5,13 @@ import (
 	"context"
 	"testing"
 
-	"mpegenc/internal/go-astits"
+	"github.com/bldsoft/mpegenc/internal/go-astits"
 
-	"mpegenc/sampleaes"
-	"mpegenc/ts/codecs/avc"
-	"mpegenc/ts/internal/mux"
-	"mpegenc/ts/internal/pmtsignal"
-	"mpegenc/ts/packets"
+	"github.com/bldsoft/mpegenc/sampleaes"
+	"github.com/bldsoft/mpegenc/ts/codecs/avc"
+	"github.com/bldsoft/mpegenc/ts/internal/mux"
+	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
+	"github.com/bldsoft/mpegenc/ts/packets"
 )
 
 type identityMediaTransformer struct {
