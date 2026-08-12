@@ -1,6 +1,7 @@
 package avc
 
-// ebspEscaper incrementally converts RBSP bytes back to EBSP form.
+import "bytes"
+
 type ebspEscaper struct {
 	zeroRun int
 }
@@ -10,22 +11,41 @@ func (e *ebspEscaper) Reset() {
 }
 
 func (e *ebspEscaper) Append(dst, data []byte) []byte {
-	for _, b := range data {
-		dst = e.AppendByte(dst, b)
-	}
-	return dst
-}
-
-func (e *ebspEscaper) AppendByte(dst []byte, b byte) []byte {
-	if e.zeroRun >= 2 && b <= 3 {
-		dst = append(dst, 3)
-		e.zeroRun = 0
-	}
-	dst = append(dst, b)
-	if b == 0 {
-		e.zeroRun = min(e.zeroRun+1, 2)
-	} else {
-		e.zeroRun = 0
+	for len(data) > 0 {
+		if e.zeroRun == 2 {
+			b := data[0]
+			if b <= 3 {
+				dst = append(dst, 3)
+			}
+			dst = append(dst, b)
+			if b == 0 {
+				e.zeroRun = 1
+			} else {
+				e.zeroRun = 0
+			}
+			data = data[1:]
+			continue
+		}
+		if e.zeroRun == 1 {
+			if data[0] == 0 {
+				dst = append(dst, 0)
+				e.zeroRun = 2
+				data = data[1:]
+				continue
+			}
+			e.zeroRun = 0
+		}
+		i := bytes.Index(data, []byte{0, 0})
+		if i < 0 {
+			dst = append(dst, data...)
+			if data[len(data)-1] == 0 {
+				e.zeroRun = 1
+			}
+			return dst
+		}
+		dst = append(dst, data[:i+2]...)
+		e.zeroRun = 2
+		data = data[i+2:]
 	}
 	return dst
 }

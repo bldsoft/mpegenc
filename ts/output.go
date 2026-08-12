@@ -58,7 +58,7 @@ func newOutputAligner(pid uint16) *outputAligner {
 	return &outputAligner{packetizer: mux.NewTSPacketizer(pid)}
 }
 
-// registerInputPacket saves this input packet's metadata and its place in the output order.
+// registerInputPacket saves this input packet's TS-level metadata and its place in the output order.
 func (a *outputAligner) registerInputPacket(token utils.CommitToken, packet *astits.Packet) error {
 	meta := a.clonePacketMetadata(packet)
 	if !a.ccInitialized {

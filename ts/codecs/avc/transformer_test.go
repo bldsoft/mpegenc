@@ -14,6 +14,20 @@ type pesHandlerEvents struct {
 	ends     int
 }
 
+type discardPESHandler struct{}
+
+func (*discardPESHandler) PESHeader([]byte) error {
+	return nil
+}
+
+func (*discardPESHandler) PESPayload([]byte) error {
+	return nil
+}
+
+func (*discardPESHandler) PESEnd() error {
+	return nil
+}
+
 func (e *pesHandlerEvents) PESHeader(header []byte) error {
 	e.header = append([]byte(nil), header...)
 	e.payloads = append(e.payloads, nil)
@@ -414,6 +428,37 @@ func TestTransformerLeavesFinalCompleteCryptIslandClear(t *testing.T) {
 	}
 }
 
+func TestTransformerEncryptsCompleteIslandWithTrailingByte(t *testing.T) {
+	nalu := make([]byte, 209)
+	nalu[0] = 0x65
+	for i := 1; i < len(nalu); i++ {
+		nalu[i] = byte(i%250 + 4)
+	}
+	input := append([]byte{0x00, 0x00, 0x01}, nalu...)
+	block := &recordingBlockCryptor{}
+	transformer := newTransformer(&pesHandlerEvents{}, block)
+
+	if err := transformer.PESHeader(testVideoPESHeader()); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESPayload(input); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESEnd(); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(block.blocks) != 2 {
+		t.Fatalf("encrypted blocks = %d, want 2", len(block.blocks))
+	}
+	if !bytes.Equal(block.blocks[1], nalu[192:208]) {
+		t.Fatalf("second block = %x, want %x", block.blocks[1], nalu[192:208])
+	}
+}
+
 func TestTransformerProtectsOnlyLongTypeOneAndFiveNALUs(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -491,6 +536,51 @@ func TestTransformerEscapesCryptedBytes(t *testing.T) {
 	}
 }
 
+func TestTransformerEscapesAcrossPESBoundary(t *testing.T) {
+	nalu := bytes.Repeat([]byte{0x55}, 49)
+	nalu[0] = 0x65
+	input := append([]byte{0x00, 0x00, 0x01}, nalu...)
+	split := 3 + 34
+	block := &recordingBlockCryptor{mutate: func(data []byte) {
+		for i := range data {
+			data[i] = 0x44
+		}
+		data[0], data[1], data[2] = 0x00, 0x00, 0x01
+	}}
+	next := &pesHandlerEvents{}
+	transformer := newTransformer(next, block)
+
+	if err := transformer.PESHeader(testVideoPESHeader()); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESPayload(input[:split]); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESEnd(); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESHeader(testVideoPESHeader()); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESPayload(input[split:]); err != nil {
+		t.Fatal(err)
+	}
+	if err := transformer.PESEnd(); err != nil {
+		t.Fatal(err)
+	}
+
+	first := append([]byte{}, input[:3+32]...)
+	first = append(first, 0x00, 0x00)
+	second := append([]byte{0x03, 0x01}, bytes.Repeat([]byte{0x44}, 13)...)
+	second = append(second, nalu[48])
+	if !bytes.Equal(next.payloads[0], first) {
+		t.Fatalf("first PES payload = %x, want %x", next.payloads[0], first)
+	}
+	if !bytes.Equal(next.payloads[1], second) {
+		t.Fatalf("second PES payload = %x, want %x", next.payloads[1], second)
+	}
+}
+
 func TestTransformerPropagatesBlockCryptorError(t *testing.T) {
 	wantErr := errors.New("crypt failed")
 	block := &recordingBlockCryptor{cryptErr: wantErr}
@@ -504,5 +594,29 @@ func TestTransformerPropagatesBlockCryptorError(t *testing.T) {
 	err := transformer.PESPayload(append([]byte{0x00, 0x00, 0x01}, nalu...))
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("error = %v, want %v", err, wantErr)
+	}
+}
+
+func BenchmarkTransformer(b *testing.B) {
+	payload := bytes.Repeat([]byte{0x55}, 1024*1024)
+	payload[0] = 0x65
+	payload = append([]byte{0x00, 0x00, 0x01}, payload...)
+	header := testVideoPESHeader()
+	b.SetBytes(int64(len(payload)))
+
+	for b.Loop() {
+		transformer := newTransformer(&discardPESHandler{}, &fuzzBlockCryptor{})
+		if err := transformer.PESHeader(header); err != nil {
+			b.Fatal(err)
+		}
+		if err := transformer.PESPayload(payload); err != nil {
+			b.Fatal(err)
+		}
+		if err := transformer.PESEnd(); err != nil {
+			b.Fatal(err)
+		}
+		if err := transformer.Flush(); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
