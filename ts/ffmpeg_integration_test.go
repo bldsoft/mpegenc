@@ -19,9 +19,9 @@ import (
 	"github.com/bldsoft/mpegenc/sampleaes"
 )
 
-// We use double playlist entries for chunk with h264 as a sentinel.
+// We use double playlist entries for h264 and ac3 as a sentinel.
 // FFmpeg has some weird behavior with unbounded pes length which causes
-// it to skip decryption of the last nalu -> we receive packet corrupt errors.
+// it to skip decryption of the last sample -> we receive packet corrupt errors.
 // This way we dont cut ffmpeg validation but workaround this problem.
 func TestFFmpegCompatibility(t *testing.T) {
 	fixtures, err := filepath.Glob("testdata/*.ts")
@@ -68,7 +68,7 @@ func TestFFmpegCompatibility(t *testing.T) {
 				t.Fatal("no media streams found")
 			}
 			for _, stream := range media.Streams {
-				if stream.CodecName != "h264" && stream.CodecName != "aac" {
+				if stream.CodecName != "h264" && stream.CodecName != "aac" && stream.CodecName != "ac3" {
 					t.Fatalf("unsupported codec %q in stream %d", stream.CodecName, stream.Index)
 				}
 			}
@@ -114,13 +114,17 @@ func TestFFmpegCompatibility(t *testing.T) {
 				t.Run(fmt.Sprintf("%d-%s", stream.Index, stream.CodecName), func(t *testing.T) {
 					streamPlaylistPath := playlistPath
 					var frameLimit []string
-					if stream.CodecName == "h264" {
+					if stream.CodecName == "h264" || stream.CodecName == "ac3" {
 						frames, err := strconv.Atoi(stream.NBReadFrames)
 						if err != nil || frames < 1 {
-							t.Fatalf("invalid video frame count %q", stream.NBReadFrames)
+							t.Fatalf("invalid frame count %q", stream.NBReadFrames)
 						}
 						streamPlaylistPath = videoPlaylistPath
-						frameLimit = []string{"-frames:v", strconv.Itoa(frames)}
+						spec := "v"
+						if stream.CodecName == "ac3" {
+							spec = "a"
+						}
+						frameLimit = []string{"-frames:" + spec, strconv.Itoa(frames)}
 					}
 					inputs := [][]string{
 						{"-i", fixture},

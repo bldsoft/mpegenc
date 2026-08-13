@@ -59,6 +59,34 @@ func TestEncryptRewritesSampleAESPMT(t *testing.T) {
 	}
 }
 
+func TestEncryptRewritesSampleAESAC3PMT(t *testing.T) {
+	const audioPID = 0x101
+	payload := ac3LikePayload()
+	input := buildSyntheticTS(t, []tsStream{
+		{pid: audioPID, streamType: astits.StreamTypeAC3Audio},
+	}, []tsPES{{pid: audioPID, payload: payload}})
+	key, iv := testKeyIV()
+	var output bytes.Buffer
+	if err := Encrypt(t.Context(), bytes.NewReader(input), &output, sampleaes.Config{Key: key, IV: iv}); err != nil {
+		t.Fatal(err)
+	}
+	stream := findPMT(t, output.Bytes()).ElementaryStreams[0]
+	if stream.StreamType != 0xC1 {
+		t.Fatalf("audio stream type = 0x%02X", stream.StreamType)
+	}
+	if len(stream.ElementaryStreamDescriptors) != 2 ||
+		stream.ElementaryStreamDescriptors[0].PrivateDataIndicator == nil ||
+		stream.ElementaryStreamDescriptors[0].PrivateDataIndicator.Indicator != 0x61633364 {
+		t.Fatal("audio stream has no ac3d descriptor")
+	}
+	registration := stream.ElementaryStreamDescriptors[1].Registration
+	want := append([]byte{'z', 'a', 'c', '3', 0, 0, 1, 10}, payload[:10]...)
+	if registration == nil || registration.FormatIdentifier != 0x61706164 ||
+		!bytes.Equal(registration.AdditionalIdentificationInfo, want) {
+		t.Fatal("audio stream has invalid apad descriptor")
+	}
+}
+
 func TestPMTProcessorReleasesRepeatedPMTsAfterAACConfig(t *testing.T) {
 	const audioPID = 0x101
 	input := buildSyntheticTS(t, []tsStream{

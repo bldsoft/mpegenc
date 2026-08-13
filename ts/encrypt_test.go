@@ -146,6 +146,16 @@ func assertPESRoundTrip(t *testing.T, original, processed map[uint16][][]byte) {
 	}
 }
 
+func ac3LikePayload() []byte {
+	frame := make([]byte, 128)
+	_, _ = rand.Read(frame)
+	frame[0] = 0x0B
+	frame[1] = 0x77
+	frame[4] = 0
+	frame[5] = 8 << 3
+	return frame
+}
+
 func TestAACEncryption(t *testing.T) {
 	const audioPID = 0x101
 	payload := adtsLikePayload(64)
@@ -165,6 +175,28 @@ func TestAACEncryption(t *testing.T) {
 	}
 	if bytes.Equal(got[23:55], payload[23:55]) {
 		t.Fatal("AAC protected bytes unchanged")
+	}
+}
+
+func TestAC3Encryption(t *testing.T) {
+	const audioPID = 0x101
+	payload := ac3LikePayload()
+	original := buildSyntheticTS(t, []tsStream{
+		{pid: audioPID, streamType: astits.StreamTypeAC3Audio},
+	}, []tsPES{{pid: audioPID, payload: payload}})
+
+	key, iv := testKeyIV()
+	var encrypted bytes.Buffer
+	if err := Encrypt(t.Context(), bytes.NewReader(original), &encrypted, sampleaes.Config{Key: key, IV: iv}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := demuxPESPayloads(t, bytes.NewReader(encrypted.Bytes()))[audioPID][0]
+	if !bytes.Equal(got[:16], payload[:16]) {
+		t.Fatal("AC-3 clear bytes changed")
+	}
+	if bytes.Equal(got[16:], payload[16:]) {
+		t.Fatal("AC-3 protected bytes unchanged")
 	}
 }
 
