@@ -10,6 +10,7 @@ import (
 	"github.com/bldsoft/mpegenc/ts/codecs/aac"
 	"github.com/bldsoft/mpegenc/ts/codecs/ac3"
 	"github.com/bldsoft/mpegenc/ts/codecs/avc"
+	"github.com/bldsoft/mpegenc/ts/codecs/eac3"
 	"github.com/bldsoft/mpegenc/ts/internal/pmtsignal"
 	"github.com/bldsoft/mpegenc/ts/packets"
 )
@@ -27,6 +28,8 @@ func NewTransformer(
 		return aac.NewTransformer(next, sampleaes.NewCBCEncryptor(cfg), signal), nil
 	case astits.StreamTypeAC3Audio:
 		return ac3.NewTransformer(next, sampleaes.NewCBCEncryptor(cfg), signal), nil
+	case astits.StreamTypeEAC3Audio:
+		return eac3.NewTransformer(next, sampleaes.NewCBCEncryptor(cfg), signal), nil
 	default:
 		return nil, fmt.Errorf("unsupported media stream type 0x%02X", streamType)
 	}
@@ -34,5 +37,6 @@ func NewTransformer(
 
 func SupportedMediaType(streamType astits.StreamType, inputEncrypted bool) bool {
 	return streamType == astits.StreamTypeH264Video ||
-		(!inputEncrypted && (streamType == astits.StreamTypeADTS || streamType == astits.StreamTypeAC3Audio))
+		(!inputEncrypted && (streamType == astits.StreamTypeADTS ||
+			streamType == astits.StreamTypeAC3Audio || streamType == astits.StreamTypeEAC3Audio))
 }

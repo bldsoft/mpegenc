@@ -68,7 +68,7 @@ func TestFFmpegCompatibility(t *testing.T) {
 				t.Fatal("no media streams found")
 			}
 			for _, stream := range media.Streams {
-				if stream.CodecName != "h264" && stream.CodecName != "aac" && stream.CodecName != "ac3" {
+				if stream.CodecName != "h264" && stream.CodecName != "aac" && stream.CodecName != "ac3" && stream.CodecName != "eac3" {
 					t.Fatalf("unsupported codec %q in stream %d", stream.CodecName, stream.Index)
 				}
 			}
@@ -114,14 +114,14 @@ func TestFFmpegCompatibility(t *testing.T) {
 				t.Run(fmt.Sprintf("%d-%s", stream.Index, stream.CodecName), func(t *testing.T) {
 					streamPlaylistPath := playlistPath
 					var frameLimit []string
-					if stream.CodecName == "h264" || stream.CodecName == "ac3" {
+					if stream.CodecName == "h264" || stream.CodecName == "ac3" || stream.CodecName == "eac3" {
 						frames, err := strconv.Atoi(stream.NBReadFrames)
 						if err != nil || frames < 1 {
 							t.Fatalf("invalid frame count %q", stream.NBReadFrames)
 						}
 						streamPlaylistPath = videoPlaylistPath
 						spec := "v"
-						if stream.CodecName == "ac3" {
+						if stream.CodecName == "ac3" || stream.CodecName == "eac3" {
 							spec = "a"
 						}
 						frameLimit = []string{"-frames:" + spec, strconv.Itoa(frames)}
