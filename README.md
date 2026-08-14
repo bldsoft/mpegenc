@@ -7,6 +7,7 @@ Go library for streaming encryption of MPEG-TS chunks using HLS Sample AES.
 - H.264/AVC
 - AAC in ADTS
 - AC-3
+- E-AC-3
 
 Unsupported elementary streams are passed through unchanged.
 
